@@ -86,7 +86,7 @@ def devide_img(today):
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
-            return True
+        return True
     except:
         return False
     else:
