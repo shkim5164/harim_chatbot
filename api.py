@@ -8,6 +8,7 @@ import datetime
 import os
 import cv2
 from pdf2image import convert_from_path
+import subprocess
   
 def crawling(today):
     try:
@@ -106,4 +107,5 @@ if not os.path.isdir(todayDir + '/images'):
 
 if(crawling(todayDir)):
     if(make_img(todayDir)):
-        devide_img(todayDir)
+        if(devide_img(todayDir)):
+            res = subprocess.call(["aws", "s3 cp ./2020059/images s3://sunukim-image-bucket --recursive"])
