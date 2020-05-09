@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import urllib.request
 from tika import parser
 import tabula
@@ -9,49 +10,58 @@ import os
 import cv2
 from pdf2image import convert_from_path
 import subprocess
+
+
   
 def crawling(today):
-    try:
-        # 헤드리스로 바꿔야됨.
+  #  try:
+    # 헤드리스로 바꿔야됨.
         # 크롤링.
-        driver = webdriver.Chrome('./chromedriver')
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
 
-        driver.implicitly_wait(3)
+    driver =  webdriver.Chrome("./chromedriver", chrome_options = chrome_options)
+   # driver = webdriver.Remote('http://127.0.0.1:4444/wd/hub', DesiredCapabilities.CHROME)
+    driver.implicitly_wait(3)
 
         # 1. 게시판 들어가서 첫번째 게시물 url 가져오기
-        board_url = 'http://www.pvv.co.kr/bbs/index.php?code=bbs_menu01'
-        driver.get(board_url)
-        post = driver.find_element_by_xpath("/html/body/table/tbody/tr/td[2]/table/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr[3]/td/table/tbody/tr/td[2]/table/tbody/tr[1]/td/table[1]/tbody/tr[2]/td[3]/a[1]")
-        post_url = post.click()
+    board_url = 'http://www.pvv.co.kr/bbs/index.php?code=bbs_menu01'
+    driver.get(board_url)
+    post = driver.find_element_by_xpath("/html/body/table/tbody/tr/td[2]/table/tbody/tr[2]/td/table/tbody/tr/td[2]/table/tbody/tr[3]/td/table/tbody/tr/td[2]/table/tbody/tr[1]/td/table[1]/tbody/tr[2]/td[3]/a[1]")
+    post_url = post.click()
 
         # 2. 게시물 들어가서 다운로드 url 가져오기
-        download_url = driver.find_element_by_xpath('//*[@id="DivAndPrint"]/table/tbody/tr/td/table[6]/tbody/tr[4]/td[2]/a')
-        url = download_url.get_attribute('href')
+    download_url = driver.find_element_by_xpath('//*[@id="DivAndPrint"]/table/tbody/tr/td/table[6]/tbody/tr[4]/td[2]/a')
+    url = download_url.get_attribute('href')
 
-        response = requests.get(url)
-        my_raw_data = response.content
+    response = requests.get(url)
+    my_raw_data = response.content
 
-        with open("./"+today+"/"+today+".pdf", 'wb') as my_data:
-            my_data.write(my_raw_data)
+    with open("./"+today+"/"+today+".pdf", 'wb') as my_data:
+        my_data.write(my_raw_data)
 
-        return True
-    except:
-        return False
-    else:
-        return False
+    return True
+    #except:
+    #    return False
+#    else:
+ #       return False
         #로그 남기기
+
         
 def make_img(today):
-    try:
-        pages = convert_from_path("./" + today + "/" + today + '.pdf', 100)
-        for page in pages:
-            page.save(today + '.jpg', 'JPEG')
-            
-        return True
-    except:
-        return False
-    else:
-        return False
+   # try:
+    pages = convert_from_path("./" + today + "/" + today + '.pdf', 100)
+    for page in pages:
+        page.save(today + '.jpg', 'JPEG')
+
+    return True
+   # except:
+    #    return False
+   # else:
+     #   return False
+
 
 def devide_img(today):
     try:
@@ -93,6 +103,7 @@ def devide_img(today):
     else:
         return False
 
+
 # 작동되는 날 폴더 없으면 만들기
 dt = datetime.datetime.now()
 #dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond
@@ -107,5 +118,6 @@ if not os.path.isdir(todayDir + '/images'):
 
 if(crawling(todayDir)):
     if(make_img(todayDir)):
-        if(devide_img(todayDir)):
-            res = subprocess.call(["aws", "s3 cp ./2020059/images s3://sunukim-image-bucket --recursive"])
+        devide_img(todayDir)
+        subprocess.call(['aws', 's3', 'cp', "./" + todayDir +  "/images", 's3://sunukim-image-bucket', '--recursive'])
+        
